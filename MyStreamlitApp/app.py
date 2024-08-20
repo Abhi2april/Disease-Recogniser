@@ -9,7 +9,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import seaborn as sns
@@ -19,7 +18,7 @@ import matplotlib.pyplot as plt
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 
-@st.cache
+@st.cache_resource
 def get_text_embedding(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     with torch.no_grad():
@@ -27,7 +26,7 @@ def get_text_embedding(text):
     return outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
 
 # Load dataset
-@st.cache
+@st.cache_data
 def load_data():
     df = pd.read_csv("https://raw.githubusercontent.com/mistralai/cookbook/main/data/Symptom2Disease.csv", index_col=0)
     label_encoder = LabelEncoder()
@@ -55,6 +54,15 @@ df["cluster"] = kmeans_model.labels_
 
 # Streamlit app layout
 st.title("Disease Classification and Clustering")
+tsne = TSNE(n_components=2, random_state=0).fit_transform(np.array(df['embeddings'].to_list()))
+
+# Create the scatter plot
+fig, ax = plt.subplots()
+sns.scatterplot(x=tsne[:, 0], y=tsne[:, 1], hue=df['label'], ax=ax)
+sns.move_legend(ax, 'upper left', bbox_to_anchor=(1, 1))
+
+# Display the plot in Streamlit
+st.pyplot(fig)
 
 # User input
 text = st.text_input("Enter symptoms:", "")
@@ -71,11 +79,3 @@ if text:
     sample_texts = df[df.cluster == cluster_label].text.head(3).tolist()
     for t in sample_texts:
         st.write(f"- {t}")
-
-    # Visualize embeddings with t-SNE
-    tsne = TSNE(n_components=2, random_state=0).fit_transform(np.array(df['embeddings'].to_list()))
-    fig, ax = plt.subplots()
-    scatter = ax.scatter(tsne[:, 0], tsne[:, 1], c=df['label_encoded'], cmap='viridis')
-    legend1 = ax.legend(*scatter.legend_elements(), title="Classes")
-    ax.add_artist(legend1)
-    st.pyplot(fig)
