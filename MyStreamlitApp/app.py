@@ -13,6 +13,7 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import seaborn as sns
 import matplotlib.pyplot as plt
+gif_path="https://media1.tenor.com/m/cJ3q4osVwEgAAAAC/detective-detective-conan.gif"
 
 # Load the tokenizer and model from Hugging Face
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
@@ -53,29 +54,45 @@ kmeans_model.fit(df['embeddings'].to_list())
 df["cluster"] = kmeans_model.labels_
 
 # Streamlit app layout
-st.title("Disease Classification and Clustering")
+st.title("Disease Detective")
+st.image(gif_path)
+st.markdown("""Welcome to Disease Detective, your AI-powered sidekick in the quest to decode your symptoms! 
+            But it doesn’t stop there—our AI also clusters similar symptoms from our dataset randomly, helping you see where your ailment might fit among others.
+            """)
 tsne = TSNE(n_components=2, random_state=0).fit_transform(np.array(df['embeddings'].to_list()))
 
 # Create the scatter plot
+st.markdown("### **Case Files: Visualizing the Symptom Clusters**")
+
 fig, ax = plt.subplots()
 sns.scatterplot(x=tsne[:, 0], y=tsne[:, 1], hue=df['label'], ax=ax)
 sns.move_legend(ax, 'upper left', bbox_to_anchor=(1, 1))
 
 # Display the plot in Streamlit
 st.pyplot(fig)
-
+st.text("Describe how you're feeling (your physical feelings).")
 # User input
-text = st.text_input("Enter symptoms:", "")
+text = st.text_input("WHAT'S AILING YOU ? ", "")
 if text:
     embedding = get_text_embedding(text)
     prediction = clf.predict([embedding]).item()
     predicted_disease = label_encoder.inverse_transform([prediction])[0]
-    st.write(f"Predicted Disease: {predicted_disease}")
+    
+    st.write(f"**Elementary, my dear Watson! The AI suspects:** {predicted_disease}")
 
     # Display cluster information
     cluster_label = kmeans_model.predict([embedding])[0]
-    st.write(f"Cluster: {cluster_label}")
-    st.write("Sample texts in this cluster:")
+    st.write(f"**Cluster Identification:** {cluster_label}")
+    st.write("**The AI has identified similar cases with these symptoms:**")
+    
     sample_texts = df[df.cluster == cluster_label].text.head(3).tolist()
     for t in sample_texts:
         st.write(f"- {t}")
+
+    st.markdown("""
+    **Case Closed!**
+    \nRemember, this AI Detective is here to assist, but for an accurate diagnosis, always consult with a healthcare professional.
+    \nJoin the force and take the red pill BTW :P
+    """)
+
+   
