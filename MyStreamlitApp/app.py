@@ -15,7 +15,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 gif_path="https://media1.tenor.com/m/cJ3q4osVwEgAAAAC/detective-detective-conan.gif"
 
-# Load the tokenizer and model from Hugging Face
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 
@@ -26,7 +25,6 @@ def get_text_embedding(text):
         outputs = model(**inputs)
     return outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
 
-# Load dataset
 @st.cache_data
 def load_data():
     df = pd.read_csv("https://raw.githubusercontent.com/mistralai/cookbook/main/data/Symptom2Disease.csv", index_col=0)
@@ -36,12 +34,12 @@ def load_data():
 
 df, label_encoder = load_data()
 
-# Prepare embeddings
+# embeddings
 df['embeddings'] = df['text'].apply(lambda x: get_text_embedding(x))
 X = df['embeddings'].tolist()
 y = df['label_encoded']
 
-# Train the Logistic Regression model
+# Logistic Regression model
 train_x, test_x, train_y, test_y = train_test_split(X, y, test_size=0.25)
 scaler = StandardScaler()
 train_x = scaler.fit_transform(train_x)
@@ -61,17 +59,14 @@ st.markdown("""Welcome to Disease Detective, your AI-powered sidekick in the que
             """)
 tsne = TSNE(n_components=2, random_state=0).fit_transform(np.array(df['embeddings'].to_list()))
 
-# Create the scatter plot
 st.markdown("### **Case Files: Visualizing the Symptom Clusters**")
 
 fig, ax = plt.subplots()
 sns.scatterplot(x=tsne[:, 0], y=tsne[:, 1], hue=df['label'], ax=ax)
 sns.move_legend(ax, 'upper left', bbox_to_anchor=(1, 1))
 
-# Display the plot in Streamlit
 st.pyplot(fig)
 st.text("Describe how you're feeling (your physical feelings).")
-# User input
 text = st.text_input("WHAT'S AILING YOU ? ", "")
 if text:
     embedding = get_text_embedding(text)
@@ -80,7 +75,6 @@ if text:
     
     st.write(f"**Elementary, my dear Watson! The AI suspects:** {predicted_disease}")
 
-    # Display cluster information
     cluster_label = kmeans_model.predict([embedding])[0]
     st.write(f"**Cluster Identification:** {cluster_label}")
     st.write("**The AI has identified similar cases with these symptoms:**")
